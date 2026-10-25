@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Go in produzione · Demo Codemotion</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2300ADD8'/%3E%3Cpath d='M9 16h14M16 9v14' stroke='%23fff' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><span></span><span></span><span></span></div>
+      <div>
+        <div class="brand-title">Go in produzione</div>
+        <div class="brand-sub">Codemotion Milano · Tech Expert</div>
+      </div>
+    </div>
+    <nav id="menu"></nav>
+    <div class="side-foot">
+      <div id="sysinfo">…</div>
+      <div class="author">Luca Bigoni</div>
+      <div class="keys"><kbd>1</kbd>–<kbd>6</kbd> pagine · <kbd>R</kbd> avvia/ricomincia · <kbd>S</kbd> ferma · <kbd>L</kbd> log</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="page-head">
+      <div class="page-num" id="pageNum">00</div>
+      <div class="page-titles">
+        <h1 id="pageTitle"></h1>
+        <p id="pageSub"></p>
+      </div>
+      <div class="run-state" id="runState"><span class="dot"></span><span class="txt">pronto</span></div>
+    </header>
+
+    <div class="narrator" id="narrator"><div class="narr-icon">💬</div><div class="narr-text" id="narrText">Scegli una funzionalità dal menu a sinistra.</div></div>
+
+    <section class="page" id="page"></section>
+
+    <section class="console" id="console">
+      <div class="console-bar">
+        <button class="c-toggle" id="cToggle" title="Mostra/nascondi (L)">▾ Log</button>
+        <span class="c-count" id="cCount">0 righe</span>
+        <div class="c-filters" id="cFilters">
+          <label><input type="checkbox" value="debug" checked><span class="lv debug">debug</span></label>
+          <label><input type="checkbox" value="info" checked><span class="lv info">info</span></label>
+          <label><input type="checkbox" value="ok" checked><span class="lv ok">ok</span></label>
+          <label><input type="checkbox" value="warn" checked><span class="lv warn">warn</span></label>
+          <label><input type="checkbox" value="error" checked><span class="lv error">error</span></label>
+        </div>
+        <input class="c-search" id="cSearch" placeholder="filtra…">
+        <label class="c-follow"><input type="checkbox" id="cFollow" checked> segui</label>
+        <button class="c-btn" id="cClear">pulisci</button>
+      </div>
+      <div class="console-body" id="cBody"></div>
+    </section>
+  </main>
+</div>
+<script src="core.js"></script>
+<script src="pages.js"></script>
+</body>
+</html>

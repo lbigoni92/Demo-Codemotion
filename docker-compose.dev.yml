@@ -1,0 +1,35 @@
+# Sviluppo con hot reload (Air):
+#   docker compose -f docker-compose.dev.yml up --build      poi apri http://localhost:8080
+# Modifichi un .go o un file in web/ → Air ricompila e riavvia → il browser si ricarica da solo.
+# Se la build fallisce, l'errore compare nei log e resta su la versione precedente.
+include:
+  - docker-compose.llm.yml
+
+services:
+  demo-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: demo-codemotion:dev
+    container_name: demo-codemotion-dev
+    ports:
+      - "${DEMO_BIND:-127.0.0.1}:${DEMO_PORT:-8080}:8080"
+    volumes:
+      - ./:/app                              # il sorgente del PC, modificabile dall'IDE
+      - go-build-cache:/root/.cache/go-build # cache di compilazione: rebuild in pochi secondi
+      - go-mod-cache:/go/pkg/mod
+    environment:
+      DEMO_LLM_URL: http://llm:8080
+      DEMO_LLM_MODEL: qwen3-1.7b
+    networks:
+      - default
+      - inference
+    init: true            # reaper dei processi (la demo 03 avvia processi figli)
+    # Air chiude bene l'app su SIGINT (con SIGTERM la lascerebbe orfana)
+    stop_signal: SIGINT
+    stop_grace_period: 10s
+    mem_limit: 1g         # il "limite del pod" della demo 02
+
+volumes:
+  go-build-cache:
+  go-mod-cache:

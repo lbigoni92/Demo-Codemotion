@@ -1,0 +1,7 @@
+demo-codemotion.exe
+demo-codemotion
+*.log
+tmp
+.git
+.vscode
+.idea

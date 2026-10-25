@@ -1,0 +1,39 @@
+# Avvio:      docker compose up --build -d     poi apri http://localhost:8080
+#             (il primo avvio scarica anche il modello AI della demo 06: vedi docker-compose.llm.yml)
+# Sviluppo:   docker compose -f docker-compose.dev.yml up --build    (Air: hot reload)
+# Stop:       docker compose down              (SIGTERM → shutdown graceful, come nella demo 05)
+#
+# Per mostrarla anche da altri dispositivi sulla stessa rete:
+#   DEMO_BIND=0.0.0.0 docker compose up        (su PowerShell: $env:DEMO_BIND="0.0.0.0")
+include:
+  - docker-compose.llm.yml
+
+services:
+  demo:
+    build: .
+    image: demo-codemotion:latest
+    container_name: demo-codemotion
+    ports:
+      - "${DEMO_BIND:-127.0.0.1}:${DEMO_PORT:-8080}:8080"
+    environment:
+      DEMO_HOST: 0.0.0.0
+      DEMO_PORT: "8080"
+      # modello locale della demo 06 (servizio llm, rete interna)
+      DEMO_LLM_URL: http://llm:8080
+      DEMO_LLM_MODEL: qwen3-1.7b
+    networks:
+      - default   # la porta pubblicata sul PC
+      - inference # verso il modello, che non ha altre reti
+    restart: unless-stopped
+    stop_signal: SIGTERM
+    stop_grace_period: 10s
+    # limite di memoria del container: è il "limite del pod" della demo 02,
+    # tienilo sopra i valori che usi negli scenari (default 1 GiB)
+    mem_limit: 1g
+    read_only: true
+    tmpfs:
+      - /tmp # il file di log generato dalla demo 06
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

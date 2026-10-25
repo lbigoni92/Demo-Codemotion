@@ -1,0 +1,40 @@
+# Air: ricompila e riavvia la demo a ogni modifica.
+#   docker compose -f docker-compose.dev.yml up --build     (oppure: air -c .air.toml)
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  # i file in web/ sono inclusi nel binario con embed: anche loro richiedono un rebuild
+  cmd = "go build -buildvcs=false -o ./tmp/demo-codemotion ."
+  entrypoint = ["./tmp/demo-codemotion"]
+  args_bin = ["-no-browser"]
+  include_ext = ["go", "html", "css", "js"]
+  exclude_dir = ["tmp", ".git", ".idea", ".vscode", "testdata"]
+  exclude_regex = ["_test\\.go$"]
+  delay = 500
+  # Docker Desktop su Windows non propaga gli eventi del filesystem nei volumi
+  # montati: senza polling Air non vedrebbe le modifiche.
+  poll = true
+  poll_interval = 500
+  # SIGINT invece di SIGKILL: il server fa lo shutdown graceful prima del riavvio
+  send_interrupt = true
+  kill_delay = "500ms"
+  # se la build fallisce resta in esecuzione la versione precedente
+  stop_on_error = false
+  log = "build-errors.log"
+
+[log]
+  time = true
+
+[color]
+  main = "magenta"
+  watcher = "cyan"
+  build = "yellow"
+  runner = "green"
+
+[misc]
+  clean_on_exit = true
+
+[screen]
+  clear_on_rebuild = false
+  keep_scroll = true

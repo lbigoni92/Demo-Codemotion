@@ -1,0 +1,96 @@
+# Modello AI locale per la demo 06, incluso da docker-compose.yml e da
+# docker-compose.dev.yml. Stessa architettura di k9slogger:
+#
+#   llm-model  scarica il modello GGUF una sola volta in un volume e ne verifica
+#              lo sha256; le volte successive controlla solo che ci sia ed esce
+#   llm        llama.cpp server, API compatibile OpenAI su http://llm:8080
+#
+# Il server del modello sta SOLO sulla rete "inference", che è interna: niente
+# internet, nessuna porta pubblicata sul PC. Lo raggiunge solo il container della demo.
+#
+# Per usare un altro modello (es. Qwen3-8B, più preciso ma ~5 volte più lento
+# su CPU) cambia le quattro variabili LLM_MODEL_* qui sotto e LLM_ALIAS.
+#
+# Primo avvio: scarica ~1,1 GB di modello e l'immagine di llama.cpp.
+# Fallo PRIMA dell'evento: dopo, tutto funziona offline.
+
+x-llm-model: &llm-model
+  LLM_MODEL_URL: https://huggingface.co/unsloth/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q4_K_M.gguf
+  LLM_MODEL_SHA256: b139949c5bd74937ad8ed8c8cf3d9ffb1e99c866c823204dc42c0d91fa181897
+  LLM_MODEL_BYTES: "1107409472"
+  LLM_MODEL_FILE: qwen3-1.7b-q4_k_m.gguf
+
+services:
+  llm-model:
+    image: curlimages/curl:8.11.1
+    user: "0:0" # il volume nuovo appartiene a root
+    environment: *llm-model
+    volumes:
+      - llm-models:/models
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        f="/models/$${LLM_MODEL_FILE}"
+        if [ -f "$$f" ] && [ "$$(stat -c %s "$$f")" = "$${LLM_MODEL_BYTES}" ]; then
+          echo "modello già presente: $$f"
+          exit 0
+        fi
+        echo "scarico $${LLM_MODEL_URL}"
+        curl -fL --retry 3 --retry-delay 5 -o "$$f.part" "$${LLM_MODEL_URL}"
+        echo "verifico lo sha256..."
+        echo "$${LLM_MODEL_SHA256}  $$f.part" | sha256sum -c -
+        mv "$$f.part" "$$f"
+        echo "modello pronto: $$f"
+    restart: "no"
+
+  llm:
+    # fissata per digest: all'evento gira esattamente l'immagine collaudata
+    image: ghcr.io/ggml-org/llama.cpp:server@sha256:20c4196fc08b459a34ef78aaa05b101333b2fac687e30ec99f37b3c9dc071b44
+    depends_on:
+      llm-model:
+        condition: service_completed_successfully
+    command:
+      - -m
+      - /models/qwen3-1.7b-q4_k_m.gguf
+      - --alias
+      - qwen3-1.7b
+      - --ctx-size
+      - "8192"
+      # 4 richieste contemporanee (slot da 2048 token): la demo 06 può mandare
+      # più gruppi insieme; con un gruppo alla volta se ne usa uno solo
+      - --parallel
+      - "4"
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+    volumes:
+      - llm-models:/models:ro
+    networks:
+      - inference
+    restart: unless-stopped
+    # ~1,5 GiB per il modello e il contesto; il resto è margine
+    mem_limit: 3g
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 60s
+
+networks:
+  # internal: nessuna uscita verso internet, il modello non può chiamare nessuno
+  inference:
+    internal: true
+
+volumes:
+  llm-models:

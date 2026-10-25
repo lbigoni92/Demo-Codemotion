@@ -1,0 +1,19 @@
+# Immagine di sviluppo con Air (hot reload): il sorgente è montato come volume
+# da docker-compose.dev.yml, Air ricompila e riavvia a ogni modifica.
+# air@latest richiede Go >= 1.26: per questo qui c'è golang:1.27 (come in ICM).
+ARG GO_IMAGE=golang:1.27-alpine
+FROM ${GO_IMAGE}
+
+RUN go install github.com/air-verse/air@latest
+
+WORKDIR /app
+COPY go.mod ./
+RUN go mod download
+
+ENV DEMO_HOST=0.0.0.0 \
+    DEMO_PORT=8080 \
+    DEMO_NO_BROWSER=1 \
+    DEMO_IN_CONTAINER=1
+EXPOSE 8080
+
+CMD ["air", "-c", ".air.toml"]
